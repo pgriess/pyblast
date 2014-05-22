@@ -98,11 +98,12 @@ def __read_single_query_result(rs):
         return None, rs
 
 
-def __run_blast(blast_command, input_file,
-                num_processes=os.sysconf('SC_NPROCESSORS_ONLN'),
-                **kwargs):
+def __run_blast_select_loop(input_file, popens):
     '''
-    Run a blast variant on the given input file.
+    Run the select(2) loop to handle blast I/O to the given set of Popen
+    objects.
+
+    Yields records back that have been read from blast processes.
     '''
 
     def make_nonblocking(f):
@@ -110,36 +111,21 @@ def __run_blast(blast_command, input_file,
         fl |= os.O_NONBLOCK
         fcntl(f.fileno(), F_SETFL, fl)
 
-    # XXX: Eventually, translate results on the fly as requested? Or
-    #      just always use our parsed object?
-    if 'outfmt' in kwargs:
-        raise Exception('Use of the -outfmt option is not supported')
-
-    args = [blast_command, '-outfmt', '7']
-    for k, v in kwargs.iteritems():
-        args += ['-' + k, str(v)]
-
     rfds = set()
     wfds = set()
     fd_map = {}
 
-    for _ in range(num_processes):
-        p = subprocess.Popen(
-            args=args, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=None, close_fds=True)
-
+    for p in popens:
         make_nonblocking(p.stdout)
-        make_nonblocking(p.stdin)
-
         rfds.add(p.stdout.fileno())
-        wfds.add(p.stdin.fileno())
-        fd_map[p.stdout.fileno()] = fd_map[p.stdin.fileno()] = {
+        fd_map[p.stdout.fileno()] = {
             'popen': p,
             'query_buffer': '',
             'result_buffer': ''}
 
-    # TODO: Need to clean up blast processes if we hit an exception.
-    #       Put cleanup in a finally clause.
+        make_nonblocking(p.stdin)
+        wfds.add(p.stdin.fileno())
+        fd_map[p.stdin.fileno()] = fd_map[p.stdout.fileno()]
 
     while len(rfds) + len(wfds) > 0:
         # XXX: Should we be tracking excepted file descriptors as well?
@@ -205,12 +191,38 @@ def __run_blast(blast_command, input_file,
 
             fd_map[fd]['query_buffer'] = qs
 
-    # Clean up blast workers. We'll end up calling p.wait() on each Popen
-    # instance more than once (since each is referenced by both stdout and
-    # stdin in the map), but this is idempotent so we're cool.
-    for fdm in fd_map.values():
-        p = fdm['popen']
-        p.wait()
+
+def __run_blast(blast_command, input_file,
+                num_processes=os.sysconf('SC_NPROCESSORS_ONLN'),
+                **kwargs):
+    '''
+    Run a blast variant on the given input file.
+    '''
+
+    # XXX: Eventually, translate results on the fly as requested? Or
+    #      just always use our parsed object?
+    if 'outfmt' in kwargs:
+        raise Exception('Use of the -outfmt option is not supported')
+
+    args = [blast_command, '-outfmt', '7']
+    for k, v in kwargs.iteritems():
+        args += ['-' + k, str(v)]
+
+    popens = []
+    for _ in range(num_processes):
+        popens.append(
+            subprocess.Popen(
+                args=args, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                stderr=None, close_fds=True))
+
+    try:
+        for r in __run_blast_select_loop(input_file, popens):
+            yield r
+    finally:
+        for p in popens:
+            if p.poll() is None:
+                p.terminate()
+            p.wait()
 
 
 def blastx(input_file, **kwargs):
