@@ -1,10 +1,7 @@
 '''
-An easy-to-use Pythonic API for invoking NCBI BLAST and processing results.
+Run `NCBI BLAST`_ with an easy-to-use Pythonic API.
 
-In addition to the API, benefits over invoking BLAST directly include:
-
-    - Automatic parallelization of BLAST by spawning a process for each CPU on
-      the host and feeding them query sequences as necessary.
+See https://github.com/pgriess/pyblast for further details.
 '''
 
 import errno
