@@ -1,3 +1,12 @@
+'''
+An easy-to-use Pythonic API for invoking NCBI BLAST and processing results.
+
+In addition to the API, benefits over invoking BLAST directly include:
+
+    - Automatic parallelization of BLAST by spawning a process for each CPU on
+      the host and feeding them query sequences as necessary.
+'''
+
 import errno
 import fcntl
 import os
@@ -231,13 +240,18 @@ def __run_blast(blast_command, input_file, *args, **kwargs):
 
 def blastn(input_file, *args, **kwargs):
     '''
-    Run `blastn` on the given input file.
+    Run blastn on the given input file.
 
     All positional arguments are passed directly to blastn as commandline
     options without values. For example, passing 'ungapped' will invoke blastn
     with the '-ungapped' option. Likewise, all keyword arguments are passed to
     blastn as options with values. For example, db='foo/bar' will result in
     blastn being invoked with '-db foo/bar'.
+
+    Some extra keyword arguments are supported which are not passed to blast:
+
+      num_processes         number of blast processes to spawn; defaults to
+                            sysconf(SC_NPROCESSORS_ONLN)
     '''
 
     return __run_blast('blastn', input_file, *args, **kwargs)
@@ -247,3 +261,7 @@ def blastp(input_file, *args, **kwargs):
 
 def blastx(input_file, *args, **kwargs):
     return __run_blast('blastx', input_file, *args, **kwargs)
+
+# Crib documentation strings from blastn
+blastp.__doc__ = blastn.__doc__.replace('blastn', 'blastp')
+blastx.__doc__ = blastn.__doc__.replace('blastn', 'blastx')
