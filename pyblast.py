@@ -1,11 +1,9 @@
-from errno import EWOULDBLOCK
-from fcntl import F_GETFL, F_SETFL, fcntl
+import errno
+import fcntl
 import os
-from pprint import pformat
-from select import select, PIPE_BUF
-from StringIO import StringIO
+import select
+import StringIO
 import subprocess
-from time import time
 
 
 def __read_single_fasta_query_lines(f):
@@ -50,7 +48,7 @@ def __read_single_query_result(rs):
     the second element is the original imput string.
     '''
 
-    rf = StringIO(rs)
+    rf = StringIO.StringIO(rs)
 
     def readline():
         l = rf.readline()
@@ -107,9 +105,9 @@ def __run_blast_select_loop(input_file, popens):
     '''
 
     def make_nonblocking(f):
-        fl = fcntl(f.fileno(), F_GETFL)
+        fl = fcntl.fcntl(f.fileno(), fcntl.F_GETFL)
         fl |= os.O_NONBLOCK
-        fcntl(f.fileno(), F_SETFL, fl)
+        fcntl.fcntl(f.fileno(), fcntl.F_SETFL, fl)
 
     rfds = set()
     wfds = set()
@@ -129,13 +127,13 @@ def __run_blast_select_loop(input_file, popens):
 
     while len(rfds) + len(wfds) > 0:
         # XXX: Should we be tracking excepted file descriptors as well?
-        rl, wl, _ = select(rfds, wfds, [])
+        rl, wl, _ = select.select(rfds, wfds, [])
 
         # For each of our readable blast processes, read response
         # records and emit them
         for fd in rl:
             rs = fd_map[fd]['result_buffer']
-            rbuf = os.read(fd, PIPE_BUF)
+            rbuf = os.read(fd, select.PIPE_BUF)
 
             # The blast process has finished emitting records. Stop
             # attempting to read from or write to it. If we have
@@ -187,7 +185,7 @@ def __run_blast_select_loop(input_file, popens):
                 written = os.write(fd, qs)
                 qs = qs[written:]
             except OSError, e:
-                assert e.errno == EWOULDBLOCK
+                assert e.errno == errno.EWOULDBLOCK
 
             fd_map[fd]['query_buffer'] = qs
 
