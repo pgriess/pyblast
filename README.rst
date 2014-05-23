@@ -31,7 +31,7 @@ with the ``-ungapped -db foo/bar`` options.
 In addition, the following keyword arguments are handled specially and
 are not passed on to BLAST:
 
-* ``num_processes`` -- number of BLAST processes to spawn; default is ``sysconf(SC_NPROCESSORS_ONLN)``
+* ``pb_num_processes`` -- number of BLAST processes to spawn; default is ``sysconf(SC_NPROCESSORS_ONLN)``
 
 ``blastp(input_file, *args, **kwargs)``
 

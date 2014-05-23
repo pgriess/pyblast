@@ -201,21 +201,19 @@ def __run_blast(blast_command, input_file, *args, **kwargs):
     Run a blast variant on the given input file.
     '''
 
-    RESERVED_KEYWORDS = ['num_processes']
-
     # XXX: Eventually, translate results on the fly as requested? Or
     #      just always use our parsed object?
     if 'outfmt' in kwargs:
         raise Exception('Use of the -outfmt option is not supported')
 
     num_processes = kwargs.get(
-        'num_processes', os.sysconf('SC_NPROCESSORS_ONLN'))
+        'pb_num_processes', os.sysconf('SC_NPROCESSORS_ONLN'))
 
     blast_args = [blast_command, '-outfmt', '7']
     for a in args:
         blast_args += ['-' + a]
     for k, v in kwargs.iteritems():
-        if k not in RESERVED_KEYWORDS:
+        if not k.startswith('pb_'):
             blast_args += ['-' + k, str(v)]
 
     popens = []
@@ -247,7 +245,7 @@ def blastn(input_file, *args, **kwargs):
 
     Some extra keyword arguments are supported which are not passed to blast:
 
-      num_processes         number of blast processes to spawn; defaults to
+      pb_num_processes      number of blast processes to spawn; defaults to
                             sysconf(SC_NPROCESSORS_ONLN)
     '''
 
