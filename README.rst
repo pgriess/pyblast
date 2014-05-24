@@ -86,7 +86,8 @@ See documentation for `blastn`_.
 The result of BLAST processing a single query sequence. The set of
 attributes on this object are:
 
-- ``query_id``: identifier for the query sequence
+- ``id``: identifier for the query sequence; can be ``None``
+- ``description``: textual description of the query sequence; can be ``None``
 - ``hits``: array of `Hit`_ objects
 
 .. _`Hit`:

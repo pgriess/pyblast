@@ -28,9 +28,16 @@ class Result(object):
     representing hits in the searched database.
     '''
 
-    query_id = None
+    id = None
     '''
-    Identifier for the query corresponding to this result.
+    Identifier for the query corresponding to this result. Can be
+    None if no identifier was provided.
+    '''
+
+    description = None
+    '''
+    Description of the query corresponding to this result. Can be
+    None if no description was provided.
     '''
 
     hits = None
@@ -129,7 +136,13 @@ def __read_single_query_result(rs, field_names):
 
         l = readline()
         assert l.startswith('# Query: ')
-        result.query_id = l[len('# Query: '):]
+        query_str = l[len('# Query: '):].strip()
+        if query_str:
+            if ' ' in query_str:
+                result.id, result.description = [
+                    s.strip() for s in query_str.split(' ', 1)]
+            else:
+                result.id = query_str
 
         l = readline()
         assert l.startswith('# Database: ')
