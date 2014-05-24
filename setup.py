@@ -18,4 +18,13 @@ setup(
     author='Peter Griess',
     author_email='pg@std.in',
     py_modules=['pyblast'],
+    url='https://github.com/pgriess/pyblast',
+    classifiers=[
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
+        'Topic :: Scientific/Engineering',
+        'Topic :: Scientific/Engineering :: Bio-Informatics',
+        'Topic :: Software Development :: Libraries',
+    ],
     license='MIT')
