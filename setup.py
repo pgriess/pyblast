@@ -2,8 +2,11 @@ from distutils.core import setup
 from os.path import dirname, join
 import imp
 
+# Create the long_description from README.rst, minus the first 6 lines which
+# are redundant with the name, version, and short description alreayd displayed
+# by PyPi by default.
 with open(join(dirname(__file__), 'README.rst')) as f:
-    long_description = f.read()
+    long_description = ''.join(f.readlines()[6:])
 
 fn = join(dirname(__file__), 'pyblast.py')
 with open(fn) as f:
@@ -13,7 +16,7 @@ with open(fn) as f:
 setup(
     name='pyblast',
     version=version,
-    description='Run NCBI BLAST with an easy-to-use Pythonic wrapper',
+    description='Run NCBI BLAST with an easy-to-use Pythonic API',
     long_description=long_description,
     author='Peter Griess',
     author_email='pg@std.in',
