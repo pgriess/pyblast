@@ -12,6 +12,65 @@ import StringIO
 import subprocess
 
 
+DEFAULT_HIT_FIELDS = [
+    'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend',
+    'sstart', 'send', 'evalue', 'bitscore']
+'''
+The default set of fields available in Hit objects.
+'''
+
+
+class Result(object):
+    '''
+    The result of a BLAST processing a single query sequence.
+
+    Each Result object contains some number of Hit objects
+    representing hits in the searched database.
+    '''
+
+    query_id = None
+    '''
+    Identifier for the query corresponding to this result.
+    '''
+
+    hits = None
+    '''
+    Iterable of of Hit objects.
+    '''
+
+    def __init__(self):
+        self.hits = []
+
+
+class Hit(object):
+    '''
+    A single hit in the BLAST database.
+
+    Fields are referenced as attributes on the instance (e.g.
+    h.qseqid to get the 'qseqid' field of the 'h' Hit object). If the
+    given field is not present in the hit, None is returned.
+    '''
+
+    __TYPES = [int, float, str]
+
+    def __init__(self, fields):
+        self.__fields = {}
+
+        for k, v in fields.iteritems():
+            for t in Hit.__TYPES:
+                try:
+                    self.__fields[k] = t(v)
+                    break
+                except:
+                    pass
+
+    def __getattr__(self, fn):
+        return self.__fields.get(fn, None)
+
+    def __dir__(self):
+        return dir(type(self)) + self.__fields.keys()
+
+
 def __read_single_fasta_query_lines(f):
     '''
     Read and return sequence of lines (including newlines) that
@@ -46,7 +105,7 @@ def __read_single_fasta_query_lines(f):
     return rec
 
 
-def __read_single_query_result(rs):
+def __read_single_query_result(rs, field_names):
     '''
     Read the result of a single query from the given string,
     returning a tuple of (record, remaining-string). If no complete
@@ -62,7 +121,7 @@ def __read_single_query_result(rs):
             raise EOFError()
         return l.strip()
 
-    record = {}
+    result = Result()
 
     try:
         l = readline()
@@ -70,39 +129,35 @@ def __read_single_query_result(rs):
 
         l = readline()
         assert l.startswith('# Query: ')
-        record['query'] = l[len('# Query: '):]
+        result.query_id = l[len('# Query: '):]
 
         l = readline()
         assert l.startswith('# Database: ')
-        record['database'] = l[len('# Database: '):]
 
         l = readline()
         if l.startswith('# Fields: '):
-            field_names = l[len('# Fields: '):].split(', ')
+            fns = l[len('# Fields: '):].split(', ')
+            assert len(field_names) == len(fns)
             l = readline()
 
         assert l.endswith(' hits found')
         nhits = int(l[len('# '):-1 * len(' hits found')])
 
-        record['hits'] = []
         while nhits > 0:
             l = readline()
             field_vals = l.split('\t')
             assert len(field_vals) == len(field_names)
 
-            h = {}
-            for i in range(len(field_names)):
-                h[field_names[i]] = field_vals[i]
-
-            record['hits'].append(h)
+            fields = dict(zip(field_names, field_vals))
+            result.hits.append(Hit(fields))
             nhits -= 1
 
-        return record, rf.read()
+        return result, rf.read()
     except EOFError:
         return None, rs
 
 
-def __run_blast_select_loop(input_file, popens):
+def __run_blast_select_loop(input_file, popens, fields):
     '''
     Run the select(2) loop to handle blast I/O to the given set of Popen
     objects.
@@ -158,7 +213,7 @@ def __run_blast_select_loop(input_file, popens):
 
             rs += rbuf
             while True:
-                rec, rs = __read_single_query_result(rs)
+                rec, rs = __read_single_query_result(rs, fields)
                 if rec is None:
                     break
                 yield rec
@@ -208,8 +263,10 @@ def __run_blast(blast_command, input_file, *args, **kwargs):
 
     num_processes = kwargs.get(
         'pb_num_processes', os.sysconf('SC_NPROCESSORS_ONLN'))
+    fields = kwargs.get('pb_fields', DEFAULT_HIT_FIELDS)
 
-    blast_args = [blast_command, '-outfmt', '7']
+    blast_args = [blast_command]
+    blast_args += ['-outfmt', '7 {}'.format(' '.join(fields))]
     for a in args:
         blast_args += ['-' + a]
     for k, v in kwargs.iteritems():
@@ -224,7 +281,7 @@ def __run_blast(blast_command, input_file, *args, **kwargs):
                 stderr=None, close_fds=True))
 
     try:
-        for r in __run_blast_select_loop(input_file, popens):
+        for r in __run_blast_select_loop(input_file, popens, fields):
             yield r
     finally:
         for p in popens:
@@ -247,6 +304,7 @@ def blastn(input_file, *args, **kwargs):
 
       pb_num_processes      number of blast processes to spawn; defaults to
                             sysconf(SC_NPROCESSORS_ONLN)
+      pb_fields             iterable of field names to retrieve for each hit
     '''
 
     return __run_blast('blastn', input_file, *args, **kwargs)
