@@ -111,3 +111,9 @@ point values.
 ``DEFAULT_HIT_FIELDS``
 
 The default fields returned for each ``Hit`` object.
+
+``VERSION``
+
+The version of PyBLAST that's being used. This can be used to more
+easily than feature detection to determine what features of the module
+are available.

@@ -12,6 +12,12 @@ import StringIO
 import subprocess
 
 
+VERSION = '0.1'
+'''
+Version of PyBLAST.
+'''
+
+
 DEFAULT_HIT_FIELDS = [
     'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend',
     'sstart', 'send', 'evalue', 'bitscore']
