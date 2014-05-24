@@ -17,4 +17,5 @@ setup(
     long_description=long_description,
     author='Peter Griess',
     author_email='pg@std.in',
-    py_modules=['pyblast'])
+    py_modules=['pyblast'],
+    license='MIT')
