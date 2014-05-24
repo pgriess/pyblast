@@ -14,7 +14,7 @@ import subprocess
 
 VERSION = '0.1'
 '''
-Version of PyBLAST.
+Version of pyblast.
 '''
 
 

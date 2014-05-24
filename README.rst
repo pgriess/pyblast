@@ -1,5 +1,5 @@
 =======
-PyBLAST
+pyblast
 =======
 
 Run `NCBI BLAST`_ with an easy-to-use Pythonic API.
@@ -114,6 +114,6 @@ The default fields returned for each ``Hit`` object.
 
 ``VERSION``
 
-The version of PyBLAST that's being used. This can be used to more
+The version of ``pyblast`` that's being used. This can be used to more
 easily than feature detection to determine what features of the module
 are available.

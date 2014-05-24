@@ -11,7 +11,7 @@ with open(fn) as f:
     version = pyblast.VERSION
 
 setup(
-    name='PyBlast',
+    name='pyblast',
     version=version,
     description='Run NCBI BLAST with an easy-to-use Pythonic wrapper',
     long_description=long_description,
